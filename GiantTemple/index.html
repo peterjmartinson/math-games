@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Temple Automaton Arm — GiantTemple Prototype</title>
+  <style>
+    :root {
+      --bg-deep: #0e0c0a;
+      --stone-dark: #1b1713;
+      --stone-mid: #2b241d;
+      --stone-border: #4a3e31;
+      --gold: #f59e0b;
+      --torch: #fb923c;
+      --jade: #34d399;
+      --cyan-chalk: #38bdf8;
+      --text-main: #f3ece2;
+      --text-muted: #a89984;
+      --danger: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      margin: 0;
+      padding: 16px;
+      background: radial-gradient(circle at 50% 20%, #1f1914 0%, var(--bg-deep) 80%);
+      color: var(--text-main);
+      font-family: "Courier New", Courier, monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .vault-container {
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--stone-dark);
+      border: 2px solid var(--stone-border);
+      padding: 10px 16px;
+      box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.7);
+    }
+
+    .title-block h1 {
+      margin: 0;
+      font-size: 17px;
+      letter-spacing: 1.5px;
+      color: var(--gold);
+      text-transform: uppercase;
+    }
+
+    .title-block p {
+      margin: 4px 0 0 0;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .relic-counter {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #14110e;
+      border: 1px solid var(--gold);
+      padding: 6px 14px;
+    }
+
+    .relic-counter .label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .relic-counter .count {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--jade);
+    }
+
+    .hud-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .hud-box {
+      background: var(--stone-dark);
+      border: 1px solid var(--stone-border);
+      padding: 8px 12px;
+    }
+
+    .hud-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .hud-val {
+      font-size: 14px;
+      font-weight: 700;
+      margin-top: 3px;
+    }
+
+    .hud-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .canvas-frame {
+      position: relative;
+      border: 2px solid var(--stone-border);
+      background: #120f0c;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.75);
+      overflow: hidden;
+    }
+
+    canvas#vaultCanvas {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .controls-deck {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      background: var(--stone-dark);
+      border: 2px solid var(--stone-border);
+      padding: 12px 16px;
+    }
+
+    .lever-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: #15120f;
+      border: 1px solid #382f25;
+      padding: 10px 12px;
+    }
+
+    .knob-canvas {
+      width: 76px;
+      height: 76px;
+      flex-shrink: 0;
+      cursor: grab;
+      touch-action: none;
+    }
+
+    .knob-canvas:active {
+      cursor: grabbing;
+    }
+
+    .slider-column {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .slider-header span.angle-tag {
+      font-size: 13px;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 10px;
+      background: #2b241d;
+      border: 1px solid #57493a;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 22px;
+      background: var(--gold);
+      border: 2px solid #fff3d1;
+      cursor: grab;
+    }
+
+    #elbowSlider::-webkit-slider-thumb {
+      background: var(--cyan-chalk);
+      border-color: #e0f2fe;
+    }
+
+    .slider-ticks {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      background: var(--stone-dark);
+      border: 1px solid var(--stone-border);
+      padding: 9px 14px;
+    }
+
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    button {
+      background: var(--stone-mid);
+      color: var(--text-main);
+      border: 1px solid var(--stone-border);
+      padding: 7px 12px;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    button:hover {
+      background: #3a3026;
+      border-color: var(--gold);
+    }
+
+    button.active-toggle {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: var(--cyan-chalk);
+      color: var(--cyan-chalk);
+    }
+
+    button.action-btn {
+      border-color: var(--jade);
+      color: var(--jade);
+    }
+
+    @media (max-width: 700px) {
+      .hud-strip {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .controls-deck {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="vault-container">
+    <div class="header-bar">
+      <div class="title-block">
+        <h1 id="stageBanner">TEMPLE AUTOMATON ARM // RELIC TRIAL #1</h1>
+        <p id="stageDesc">Pilot the Shoulder (α) and Elbow (β) stone linkages to hold the claw over the glowing relic for 1.0s.</p>
+      </div>
+      <div class="relic-counter">
+        <div>
+          <div class="label">Relics Retrieved</div>
+          <div class="count" id="relicsCount">0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hud-strip">
+      <div class="hud-box">
+        <div class="hud-label">Shoulder α (L1 = 160px)</div>
+        <div class="hud-val" id="hudAlpha" style="color: var(--gold);">0.50π (90.0°)</div>
+        <div class="hud-sub" id="hudL1Vec">ΔX₁: +0px | ΔY₁: +160px</div>
+      </div>
+      <div class="hud-box">
+        <div class="hud-label">Elbow β (L2 = 140px)</div>
+        <div class="hud-val" id="hudBeta" style="color: var(--cyan-chalk);">0.00π (0.0°)</div>
+        <div class="hud-sub" id="hudAlphaBeta">Combined (α+β): 90.0°</div>
+      </div>
+      <div class="hud-box">
+        <div class="hud-label">Claw Position (X, Y)</div>
+        <div class="hud-val" id="hudClawPos">(+0, +300)</div>
+        <div class="hud-sub" id="hudTotalReach">Total Reach: 300px / 300px</div>
+      </div>
+      <div class="hud-box">
+        <div class="hud-label">Relic Target (Xt, Yt)</div>
+        <div class="hud-val" id="hudTargetPos" style="color: var(--jade);">(-120, +210)</div>
+        <div class="hud-sub" id="hudDistance">Dist: 145px (Need ≤ 15px)</div>
+      </div>
+    </div>
+
+    <div class="canvas-frame">
+      <canvas id="vaultCanvas" width="900" height="470"></canvas>
+    </div>
+
+    <div class="controls-deck">
+      <!-- Shoulder Knob + Slider -->
+      <div class="lever-card">
+        <canvas id="shoulderKnob" class="knob-canvas" width="76" height="76" title="Drag rotary knob to turn Shoulder α"></canvas>
+        <div class="slider-column">
+          <div class="slider-header">
+            <span style="color: var(--gold);">KNOB 1: SHOULDER LINKAGE (α)</span>
+            <span class="angle-tag" id="alphaSliderLabel" style="color: var(--gold);">90° (0.50π)</span>
+          </div>
+          <input id="shoulderSlider" type="range" min="0" max="3.14159" step="0.005" value="1.5708" />
+          <div class="slider-ticks">
+            <span>0 (Right)</span>
+            <span>π/2 (Up)</span>
+            <span>π (Left)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Elbow Knob + Slider -->
+      <div class="lever-card">
+        <canvas id="elbowKnob" class="knob-canvas" width="76" height="76" title="Drag rotary knob to bend Elbow β"></canvas>
+        <div class="slider-column">
+          <div class="slider-header">
+            <span style="color: var(--cyan-chalk);">KNOB 2: ELBOW LINKAGE (β)</span>
+            <span class="angle-tag" id="betaSliderLabel" style="color: var(--cyan-chalk);">0° (0.00π)</span>
+          </div>
+          <input id="elbowSlider" type="range" min="-3.14159" max="3.14159" step="0.005" value="0" />
+          <div class="slider-ticks">
+            <span>-π (Fold R)</span>
+            <span>0 (Aligned)</span>
+            <span>+π (Fold L)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="btn-row">
+        <button id="toggleGeometryBtn" class="active-toggle" type="button">Show Reach Geometry: ON</button>
+        <button id="extendArmBtn" type="button" title="Set β = 0 so both segments align for maximum 300px reach">Full Extend (β = 0)</button>
+        <button id="invertBetaBtn" type="button" title="Flip elbow angle β → -β to reach around stone pillars">Flip Elbow (β → -β)</button>
+      </div>
+      <div class="btn-row">
+        <button id="skipRelicBtn" class="action-btn" type="button">Spawn Next Relic →</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const canvas = document.getElementById('vaultCanvas');
+      const ctx = canvas.getContext('2d');
+
+      const shoulderKnobCanvas = document.getElementById('shoulderKnob');
+      const shoulderKnobCtx = shoulderKnobCanvas.getContext('2d');
+      const elbowKnobCanvas = document.getElementById('elbowKnob');
+      const elbowKnobCtx = elbowKnobCanvas.getContext('2d');
+
+      // DOM Elements
+      const stageBannerEl = document.getElementById('stageBanner');
+      const stageDescEl = document.getElementById('stageDesc');
+      const relicsCountEl = document.getElementById('relicsCount');
+      const hudAlphaEl = document.getElementById('hudAlpha');
+      const hudL1VecEl = document.getElementById('hudL1Vec');
+      const hudBetaEl = document.getElementById('hudBeta');
+      const hudAlphaBetaEl = document.getElementById('hudAlphaBeta');
+      const hudClawPosEl = document.getElementById('hudClawPos');
+      const hudTotalReachEl = document.getElementById('hudTotalReach');
+      const hudTargetPosEl = document.getElementById('hudTargetPos');
+      const hudDistanceEl = document.getElementById('hudDistance');
+
+      const shoulderSlider = document.getElementById('shoulderSlider');
+      const elbowSlider = document.getElementById('elbowSlider');
+      const alphaSliderLabel = document.getElementById('alphaSliderLabel');
+      const betaSliderLabel = document.getElementById('betaSliderLabel');
+
+      const toggleGeometryBtn = document.getElementById('toggleGeometryBtn');
+      const extendArmBtn = document.getElementById('extendArmBtn');
+      const invertBetaBtn = document.getElementById('invertBetaBtn');
+      const skipRelicBtn = document.getElementById('skipRelicBtn');
+
+      // Automaton Specs (per initial_prompt.md)
+      const ANCHOR_X = canvas.width / 2;     // 450
+      const ANCHOR_Y = canvas.height - 80;   // 390
+      const L1 = 160;                        // Shoulder base segment
+      const L2 = 140;                        // Elbow forearm segment
+      const CAPTURE_RADIUS = 15;             // Within 15px of relic
+      const HOLD_DURATION = 1.0;             // Hold for 1.0 second
+
+      // Curated starter challenges to highlight the math & concept before procedural spawns
+      const RELIC_CHALLENGES = [
+        {
+          title: 'TRIAL 1: FULL EXTENSION (β = 0)',
+          desc: 'Align both arm segments (β ≈ 0) to reach the high crystal orb near the vault ceiling.',
+          alpha: 1.05,
+          beta: 0.0,
+          moving: false,
+          pillar: null
+        },
+        {
+          title: 'TRIAL 2: FOLDED REACH (DEEP BEND)',
+          desc: 'The relic hovers close to the pedestal! Bend the elbow sharply (β) against the shoulder (α) to fold the arm inward.',
+          alpha: 2.15,
+          beta: -2.25,
+          moving: false,
+          pillar: null
+        },
+        {
+          title: 'TRIAL 3: OBSTRUCTED PILLAR (ELBOW ROUTING)',
+          desc: 'A hanging obsidian pillar blocks a high shoulder angle! Reach underneath and bend the elbow upward (+β) around it.',
+          alpha: 0.42,
+          beta: 1.35,
+          moving: false,
+          pillar: { x: ANCHOR_X + 75, y: ANCHOR_Y - 210, w: 38, h: 120 }
+        },
+        {
+          title: 'TRIAL 4: DRIFTING STREAM RELIC',
+          desc: 'The crystal is carried along a horizontal ceiling current! Coordinate α and β to track it for 1.0 second.',
+          alpha: 1.4,
+          beta: -0.7,
+          moving: true,
+          pillar: null
+        }
+      ];
+
+      // Game State
+      const state = {
+        alpha: Math.PI / 2,   // [0, π]
+        beta: 0,              // [-π, π]
+        showGeometry: true,
+        relicsRetrieved: 0,
+        trialIndex: 0,
+        targetBaseX: 0,
+        targetBaseY: 220,
+        targetX: 0,
+        targetY: 220,
+        isMovingRelic: false,
+        pillar: null,
+        elbowBlocked: false,
+        holdTimer: 0,
+        shakeTime: 0,
+        shakeMagnitude: 0,
+        captureFlash: 0,
+        keys: {}
+      };
+
+      function clamp(val, min, max) {
+        return Math.max(min, Math.min(max, val));
+      }
+
+      function forwardKinematics(alpha, beta) {
+        // Math coordinates relative to anchor (X right, Y up)
+        const x1 = L1 * Math.cos(alpha);
+        const y1 = L1 * Math.sin(alpha);
+        const combined = alpha + beta;
+        const dx2 = L2 * Math.cos(combined);
+        const dy2 = L2 * Math.sin(combined);
+        const x = x1 + dx2;
+        const y = y1 + dy2;
+
+        return {
+          x1,
+          y1,
+          dx2,
+          dy2,
+          x,
+          y,
+          combined,
+          elbowCanvasX: ANCHOR_X + x1,
+          elbowCanvasY: ANCHOR_Y - y1,
+          clawCanvasX: ANCHOR_X + x,
+          clawCanvasY: ANCHOR_Y - y
+        };
+      }
+
+      function spawnRelicForTrial(index) {
+        state.holdTimer = 0;
+        if (index < RELIC_CHALLENGES.length) {
+          const c = RELIC_CHALLENGES[index];
+          const fk = forwardKinematics(c.alpha, c.beta);
+          state.targetBaseX = fk.x;
+          state.targetBaseY = fk.y;
+          state.targetX = fk.x;
+          state.targetY = fk.y;
+          state.isMovingRelic = c.moving;
+          state.pillar = c.pillar ? { ...c.pillar } : null;
+          stageBannerEl.textContent = `TEMPLE AUTOMATON ARM // ${c.title}`;
+          stageDescEl.textContent = c.desc;
+        } else {
+          // Procedural valid reachable coordinate
+          let valid = false;
+          let fk = null;
+          while (!valid) {
+            const randAlpha = 0.2 + Math.random() * (Math.PI - 0.4);
+            const randBeta = (Math.random() * 2 - 1) * (Math.PI * 0.85);
+            fk = forwardKinematics(randAlpha, randBeta);
+            // Keep target above the floor and comfortably inside the vault chamber
+            if (fk.y >= 35 && fk.y <= 285 && Math.abs(fk.x) <= 275) {
+              valid = true;
+            }
+          }
+          state.targetBaseX = fk.x;
+          state.targetBaseY = fk.y;
+          state.targetX = fk.x;
+          state.targetY = fk.y;
+          state.isMovingRelic = index % 3 === 0;
+          state.pillar = null;
+          stageBannerEl.textContent = `TEMPLE AUTOMATON ARM // VAULT RELIC #${index + 1}`;
+          stageDescEl.textContent = state.isMovingRelic
+            ? 'Drifting relic detected! Coordinate Shoulder (α) and Elbow (β) to stay locked onto the orb for 1.0s.'
+            : 'Adjust α and β to position the stone claw within 15px of the relic and hold for 1.0s.';
+        }
+      }
+
+      function setAngles(newAlpha, newBeta) {
+        const clampedAlpha = clamp(newAlpha, 0, Math.PI);
+        let wrappedBeta = newBeta;
+        if (wrappedBeta > Math.PI) wrappedBeta = Math.PI;
+        if (wrappedBeta < -Math.PI) wrappedBeta = -Math.PI;
+
+        // Check if stone pillar blocks the elbow joint
+        if (state.pillar) {
+          const fk = forwardKinematics(clampedAlpha, wrappedBeta);
+          const p = state.pillar;
+          const pad = 14;
+          const hitsElbow =
+            fk.elbowCanvasX >= p.x - pad &&
+            fk.elbowCanvasX <= p.x + p.w + pad &&
+            fk.elbowCanvasY >= p.y - pad &&
+            fk.elbowCanvasY <= p.y + p.h + pad;
+
+          if (hitsElbow) {
+            state.elbowBlocked = true;
+            return;
+          }
+        }
+
+        state.elbowBlocked = false;
+        state.alpha = clampedAlpha;
+        state.beta = wrappedBeta;
+        syncControlsToState();
+      }
+
+      function syncControlsToState() {
+        shoulderSlider.value = state.alpha.toFixed(4);
+        elbowSlider.value = state.beta.toFixed(4);
+
+        const alphaDeg = ((state.alpha * 180) / Math.PI).toFixed(1);
+        const betaDeg = ((state.beta * 180) / Math.PI).toFixed(1);
+
+        alphaSliderLabel.textContent = `${alphaDeg}° (${(state.alpha / Math.PI).toFixed(2)}π)`;
+        betaSliderLabel.textContent = `${state.beta >= 0 ? '+' : ''}${betaDeg}° (${(state.beta / Math.PI).toFixed(2)}π)`;
+
+        drawRotaryKnob(shoulderKnobCtx, state.alpha, 0, Math.PI, '#f59e0b', 'α');
+        drawRotaryKnob(elbowKnobCtx, state.beta, -Math.PI, Math.PI, '#38bdf8', 'β');
+      }
+
+      // Draw interactive stone rotary knob
+      function drawRotaryKnob(kCtx, angle, minA, maxA, color, symbol) {
+        const w = kCtx.canvas.width;
+        const h = kCtx.canvas.height;
+        const cx = w / 2;
+        const cy = h / 2;
+        const r = 30;
+
+        kCtx.clearRect(0, 0, w, h);
+
+        // Outer stone ring
+        kCtx.fillStyle = '#221c16';
+        kCtx.strokeStyle = '#57493a';
+        kCtx.lineWidth = 3;
+        kCtx.beginPath();
+        kCtx.arc(cx, cy, r, 0, Math.PI * 2);
+        kCtx.fill();
+        kCtx.stroke();
+
+        // Carved notches around knob rim
+        for (let i = 0; i < 12; i++) {
+          const a = (i * Math.PI) / 6;
+          kCtx.strokeStyle = '#3d3328';
+          kCtx.lineWidth = 1.5;
+          kCtx.beginPath();
+          kCtx.moveTo(cx + (r - 5) * Math.cos(a), cy - (r - 5) * Math.sin(a));
+          kCtx.lineTo(cx + r * Math.cos(a), cy - r * Math.sin(a));
+          kCtx.stroke();
+        }
+
+        // Active sweep arc
+        kCtx.strokeStyle = color;
+        kCtx.lineWidth = 2.5;
+        kCtx.beginPath();
+        kCtx.arc(cx, cy, r - 7, 0, -angle, angle > 0);
+        kCtx.stroke();
+
+        // Indicator needle
+        const tipX = cx + (r - 4) * Math.cos(angle);
+        const tipY = cy - (r - 4) * Math.sin(angle);
+        kCtx.strokeStyle = color;
+        kCtx.lineWidth = 3;
+        kCtx.beginPath();
+        kCtx.moveTo(cx, cy);
+        kCtx.lineTo(tipX, tipY);
+        kCtx.stroke();
+
+        kCtx.fillStyle = color;
+        kCtx.beginPath();
+        kCtx.arc(tipX, tipY, 4, 0, Math.PI * 2);
+        kCtx.fill();
+
+        // Center glyph
+        kCtx.fillStyle = '#e5ded5';
+        kCtx.font = 'bold 11px "Courier New", monospace';
+        kCtx.textAlign = 'center';
+        kCtx.fillText(symbol, cx, cy + 4);
+      }
+
+      function setupRotaryKnobDrag(knobCanvas, isShoulder) {
+        let dragging = false;
+
+        function updateFromPointer(evt) {
+          const rect = knobCanvas.getBoundingClientRect();
+          const cx = rect.left + rect.width / 2;
+          const cy = rect.top + rect.height / 2;
+          const dx = evt.clientX - cx;
+          const dy = cy - evt.clientY;
+          const angle = Math.atan2(dy, dx);
+
+          if (isShoulder) {
+            // Clamp smoothly to [0, π]
+            const clamped = angle < 0 ? (dx >= 0 ? 0 : Math.PI) : angle;
+            setAngles(clamped, state.beta);
+          } else {
+            setAngles(state.alpha, angle);
+          }
+        }
+
+        knobCanvas.addEventListener('pointerdown', (evt) => {
+          dragging = true;
+          knobCanvas.setPointerCapture(evt.pointerId);
+          updateFromPointer(evt);
+        });
+
+        knobCanvas.addEventListener('pointermove', (evt) => {
+          if (!dragging) return;
+          updateFromPointer(evt);
+        });
+
+        const stop = (evt) => {
+          if (!dragging) return;
+          dragging = false;
+          if (evt && evt.pointerId !== undefined && knobCanvas.hasPointerCapture(evt.pointerId)) {
+            knobCanvas.releasePointerCapture(evt.pointerId);
+          }
+        };
+        knobCanvas.addEventListener('pointerup', stop);
+        knobCanvas.addEventListener('pointercancel', stop);
+      }
+
+      setupRotaryKnobDrag(shoulderKnobCanvas, true);
+      setupRotaryKnobDrag(elbowKnobCanvas, false);
+
+      // Slider events
+      shoulderSlider.addEventListener('input', () => {
+        setAngles(parseFloat(shoulderSlider.value), state.beta);
+      });
+
+      elbowSlider.addEventListener('input', () => {
+        setAngles(state.alpha, parseFloat(elbowSlider.value));
+      });
+
+      // Buttons
+      toggleGeometryBtn.addEventListener('click', () => {
+        state.showGeometry = !state.showGeometry;
+        toggleGeometryBtn.textContent = `Show Reach Geometry: ${state.showGeometry ? 'ON' : 'OFF'}`;
+        toggleGeometryBtn.classList.toggle('active-toggle', state.showGeometry);
+      });
+
+      extendArmBtn.addEventListener('click', () => {
+        setAngles(state.alpha, 0);
+      });
+
+      invertBetaBtn.addEventListener('click', () => {
+        setAngles(state.alpha, -state.beta);
+      });
+
+      skipRelicBtn.addEventListener('click', () => {
+        state.trialIndex++;
+        spawnRelicForTrial(state.trialIndex);
+      });
+
+      // Optional keyboard puppeteering (A/D for Shoulder α, J/L or Left/Right for Elbow β)
+      window.addEventListener('keydown', (e) => {
+        state.keys[e.code] = true;
+      });
+      window.addEventListener('keyup', (e) => {
+        state.keys[e.code] = false;
+      });
+
+      function formatSignedPx(val) {
+        const rounded = Math.round(val);
+        return `${rounded >= 0 ? '+' : ''}${rounded}`;
+      }
+
+      function drawStoneBeam(x1, y1, x2, y2, thickness, fillStyle, runeColor) {
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const len = Math.hypot(dx, dy);
+        const angle = Math.atan2(dy, dx);
+
+        ctx.save();
+        ctx.translate(x1, y1);
+        ctx.rotate(angle);
+
+        // Main carved stone beam
+        ctx.fillStyle = fillStyle;
+        ctx.strokeStyle = '#5c4d3c';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(0, -thickness / 2, len, thickness, 6);
+        ctx.fill();
+        ctx.stroke();
+
+        // Inner glowing rune channel
+        ctx.strokeStyle = runeColor;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(14, 0);
+        ctx.lineTo(len - 14, 0);
+        ctx.stroke();
+
+        // Carved cross-ribs
+        ctx.strokeStyle = '#3d3226';
+        ctx.lineWidth = 1.5;
+        for (let pos = 28; pos < len - 20; pos += 28) {
+          ctx.beginPath();
+          ctx.moveTo(pos, -thickness / 2 + 3);
+          ctx.lineTo(pos, thickness / 2 - 3);
+          ctx.stroke();
+        }
+
+        ctx.restore();
+      }
+
+      function drawReachGeometryChalk(fk) {
+        ctx.save();
+
+        // 1. Combined Reach Vector (Anchor -> Claw)
+        ctx.strokeStyle = 'rgba(52, 211, 153, 0.65)';
+        ctx.lineWidth = 1.8;
+        ctx.setLineDash([6, 6]);
+        ctx.beginPath();
+        ctx.moveTo(ANCHOR_X, ANCHOR_Y);
+        ctx.lineTo(fk.clawCanvasX, fk.clawCanvasY);
+        ctx.stroke();
+
+        // 2. Shoulder α Right Triangle (Amber glowing chalk)
+        const sCornerX = fk.elbowCanvasX;
+        const sCornerY = ANCHOR_Y;
+        ctx.strokeStyle = 'rgba(245, 158, 11, 0.75)';
+        ctx.fillStyle = 'rgba(245, 158, 11, 0.07)';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(ANCHOR_X, ANCHOR_Y);
+        ctx.lineTo(sCornerX, sCornerY);
+        ctx.lineTo(fk.elbowCanvasX, fk.elbowCanvasY);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Right-angle marker for α triangle
+        const sSignX = fk.x1 >= 0 ? -10 : 10;
+        const sSignY = fk.y1 >= 0 ? -10 : 10;
+        ctx.setLineDash([]);
+        ctx.strokeRect(sCornerX, sCornerY, sSignX, sSignY);
+
+        // Labels for L1 cos(α) & L1 sin(α)
+        ctx.fillStyle = '#fbbf24';
+        ctx.font = '11px "Courier New", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(`L₁cos(α)=${Math.round(fk.x1)}`, (ANCHOR_X + sCornerX) / 2, ANCHOR_Y + 16);
+        ctx.textAlign = fk.x1 >= 0 ? 'left' : 'right';
+        ctx.fillText(
+          `L₁sin(α)=${Math.round(fk.y1)}`,
+          sCornerX + (fk.x1 >= 0 ? 6 : -6),
+          (ANCHOR_Y + fk.elbowCanvasY) / 2
+        );
+
+        // Angle α arc at Anchor
+        ctx.strokeStyle = '#fbbf24';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(ANCHOR_X, ANCHOR_Y, 34, 0, -state.alpha, true);
+        ctx.stroke();
+
+        // 3. Forearm (α + β) Right Triangle (Cyan glowing chalk)
+        const eCornerX = fk.clawCanvasX;
+        const eCornerY = fk.elbowCanvasY;
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.8)';
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.08)';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(fk.elbowCanvasX, fk.elbowCanvasY);
+        ctx.lineTo(eCornerX, eCornerY);
+        ctx.lineTo(fk.clawCanvasX, fk.clawCanvasY);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Reference line extending L1 direction to show relative angle β clearly
+        const extX = fk.elbowCanvasX + 48 * Math.cos(state.alpha);
+        const extY = fk.elbowCanvasY - 48 * Math.sin(state.alpha);
+        ctx.strokeStyle = 'rgba(245, 158, 11, 0.45)';
+        ctx.setLineDash([2, 3]);
+        ctx.beginPath();
+        ctx.moveTo(fk.elbowCanvasX, fk.elbowCanvasY);
+        ctx.lineTo(extX, extY);
+        ctx.stroke();
+
+        // Arc for β at Elbow
+        ctx.setLineDash([]);
+        ctx.strokeStyle = '#38bdf8';
+        ctx.beginPath();
+        ctx.arc(
+          fk.elbowCanvasX,
+          fk.elbowCanvasY,
+          28,
+          -state.alpha,
+          -fk.combined,
+          state.beta > 0
+        );
+        ctx.stroke();
+
+        // Labels for L2 cos(α+β) & L2 sin(α+β)
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = '11px "Courier New", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(
+          `L₂cos(α+β)=${Math.round(fk.dx2)}`,
+          (fk.elbowCanvasX + eCornerX) / 2,
+          eCornerY + (fk.dy2 >= 0 ? 14 : -6)
+        );
+        ctx.textAlign = fk.dx2 >= 0 ? 'left' : 'right';
+        ctx.fillText(
+          `L₂sin(α+β)=${Math.round(fk.dy2)}`,
+          eCornerX + (fk.dx2 >= 0 ? 6 : -6),
+          (eCornerY + fk.clawCanvasY) / 2
+        );
+
+        ctx.restore();
+      }
+
+      function drawVaultBackground(timeSec) {
+        // Torchlit radial glow behind the automaton
+        const flicker = Math.sin(timeSec * 7) * 6 + Math.cos(timeSec * 13) * 4;
+        const grad = ctx.createRadialGradient(
+          ANCHOR_X,
+          ANCHOR_Y - 120,
+          20,
+          ANCHOR_X,
+          ANCHOR_Y - 100,
+          440 + flicker
+        );
+        grad.addColorStop(0, 'rgba(251, 146, 60, 0.14)');
+        grad.addColorStop(0.5, 'rgba(43, 33, 24, 0.35)');
+        grad.addColorStop(1, '#100d0a');
+
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Reachable outer envelope arc (L1 + L2 = 300px) & inner folded arc (|L1 - L2| = 20px)
+        ctx.save();
+        ctx.strokeStyle = 'rgba(168, 153, 132, 0.14)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 6]);
+        ctx.beginPath();
+        ctx.arc(ANCHOR_X, ANCHOR_Y, L1 + L2, Math.PI, 0, false);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(ANCHOR_X, ANCHOR_Y, Math.abs(L1 - L2), Math.PI, 0, false);
+        ctx.stroke();
+        ctx.restore();
+
+        // Carved stone floor & stepped temple plinth
+        ctx.fillStyle = '#1b1612';
+        ctx.strokeStyle = '#4a3e31';
+        ctx.lineWidth = 2;
+        ctx.fillRect(0, ANCHOR_Y, canvas.width, canvas.height - ANCHOR_Y);
+        ctx.beginPath();
+        ctx.moveTo(0, ANCHOR_Y);
+        ctx.lineTo(canvas.width, ANCHOR_Y);
+        ctx.stroke();
+
+        // Stepped Mayan pedestal at Anchor
+        ctx.fillStyle = '#29221b';
+        ctx.fillRect(ANCHOR_X - 75, ANCHOR_Y, 150, 32);
+        ctx.strokeRect(ANCHOR_X - 75, ANCHOR_Y, 150, 32);
+        ctx.fillStyle = '#332a21';
+        ctx.fillRect(ANCHOR_X - 50, ANCHOR_Y - 14, 100, 18);
+        ctx.strokeRect(ANCHOR_X - 50, ANCHOR_Y - 14, 100, 18);
+
+        // Hanging obstacle pillar if active
+        if (state.pillar) {
+          const p = state.pillar;
+          ctx.fillStyle = state.elbowBlocked ? '#572222' : '#2a231c';
+          ctx.strokeStyle = state.elbowBlocked ? '#ef4444' : '#6e5b47';
+          ctx.lineWidth = 2;
+          ctx.fillRect(p.x, p.y, p.w, p.h);
+          ctx.strokeRect(p.x, p.y, p.w, p.h);
+
+          ctx.fillStyle = '#fca5a5';
+          ctx.font = 'bold 10px "Courier New", monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText('PILLAR', p.x + p.w / 2, p.y + p.h / 2);
+        }
+      }
+
+      function drawRelicOrb(timeSec, distToRelic) {
+        const rx = ANCHOR_X + state.targetX;
+        const ry = ANCHOR_Y - state.targetY;
+        const pulse = 1 + 0.12 * Math.sin(timeSec * 5);
+        const isCapturing = distToRelic <= CAPTURE_RADIUS;
+
+        ctx.save();
+
+        // Capture proximity ring (15px tolerance)
+        ctx.strokeStyle = isCapturing ? '#34d399' : 'rgba(52, 211, 153, 0.35)';
+        ctx.lineWidth = isCapturing ? 2 : 1.2;
+        ctx.setLineDash(isCapturing ? [] : [3, 3]);
+        ctx.beginPath();
+        ctx.arc(rx, ry, CAPTURE_RADIUS, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // 1.0s Hold progress arc
+        if (state.holdTimer > 0) {
+          const progress = clamp(state.holdTimer / HOLD_DURATION, 0, 1);
+          ctx.strokeStyle = '#fbbf24';
+          ctx.lineWidth = 4;
+          ctx.setLineDash([]);
+          ctx.beginPath();
+          ctx.arc(rx, ry, CAPTURE_RADIUS + 6, -Math.PI / 2, -Math.PI / 2 + progress * Math.PI * 2);
+          ctx.stroke();
+        }
+
+        // Glowing crystal orb
+        const orbGrad = ctx.createRadialGradient(rx, ry, 2, rx, ry, 18 * pulse);
+        orbGrad.addColorStop(0, '#ffffff');
+        orbGrad.addColorStop(0.4, '#34d399');
+        orbGrad.addColorStop(1, 'rgba(52, 211, 153, 0)');
+        ctx.fillStyle = orbGrad;
+        ctx.beginPath();
+        ctx.arc(rx, ry, 18 * pulse, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Diamond crystal core
+        ctx.fillStyle = '#a7f3d0';
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(rx, ry - 9);
+        ctx.lineTo(rx + 7, ry);
+        ctx.lineTo(rx, ry + 9);
+        ctx.lineTo(rx - 7, ry);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#6ee7b7';
+        ctx.font = 'bold 11px "Courier New", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(
+          isCapturing
+            ? `HOLDING... ${(HOLD_DURATION - state.holdTimer).toFixed(1)}s`
+            : `RELIC (${Math.round(state.targetX)}, ${Math.round(state.targetY)})`,
+          rx,
+          ry - 24
+        );
+
+        ctx.restore();
+      }
+
+      function drawClawHand(fk, isCapturing) {
+        const cx = fk.clawCanvasX;
+        const cy = fk.clawCanvasY;
+        const angle = -fk.combined; // Canvas rotation
+
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(angle);
+
+        const jawSpread = isCapturing ? 0.25 : 0.52;
+        const pincerColor = isCapturing ? '#34d399' : '#d6c7b2';
+
+        ctx.strokeStyle = pincerColor;
+        ctx.lineWidth = 3.5;
+
+        // Upper stone pincer
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(14 * Math.cos(jawSpread), -14 * Math.sin(jawSpread));
+        ctx.lineTo(22, -5);
+        ctx.stroke();
+
+        // Lower stone pincer
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(14 * Math.cos(jawSpread), 14 * Math.sin(jawSpread));
+        ctx.lineTo(22, 5);
+        ctx.stroke();
+
+        // Wrist socket
+        ctx.fillStyle = '#2b241d';
+        ctx.strokeStyle = pincerColor;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, 0, 7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.restore();
+      }
+
+      let lastTime = performance.now();
+
+      function tick(now) {
+        const dt = Math.min(0.05, (now - lastTime) / 1000);
+        lastTime = now;
+        const timeSec = now / 1000;
+
+        // Keyboard adjustments
+        const speed = 1.25 * dt;
+        let dAlpha = 0;
+        let dBeta = 0;
+        if (state.keys['KeyA'] || state.keys['KeyW']) dAlpha += speed;
+        if (state.keys['KeyD'] || state.keys['KeyS']) dAlpha -= speed;
+        if (state.keys['ArrowLeft'] || state.keys['KeyJ']) dBeta += speed * 1.4;
+        if (state.keys['ArrowRight'] || state.keys['KeyL']) dBeta -= speed * 1.4;
+        if (dAlpha !== 0 || dBeta !== 0) {
+          setAngles(state.alpha + dAlpha, state.beta + dBeta);
+        }
+
+        // Update drifting relic if active
+        if (state.isMovingRelic) {
+          state.targetX = state.targetBaseX + Math.sin(timeSec * 1.1) * 55;
+        }
+
+        const fk = forwardKinematics(state.alpha, state.beta);
+        const distToRelic = Math.hypot(fk.x - state.targetX, fk.y - state.targetY);
+        const isCapturing = distToRelic <= CAPTURE_RADIUS;
+
+        if (isCapturing) {
+          state.holdTimer += dt;
+          if (state.holdTimer >= HOLD_DURATION) {
+            // Relic Collected! Trigger stone-rumble screen shake
+            state.relicsRetrieved++;
+            relicsCountEl.textContent = String(state.relicsRetrieved);
+            state.shakeTime = 0.45;
+            state.shakeMagnitude = 9;
+            state.captureFlash = 1.0;
+            state.trialIndex++;
+            spawnRelicForTrial(state.trialIndex);
+          }
+        } else {
+          state.holdTimer = Math.max(0, state.holdTimer - dt * 2);
+        }
+
+        if (state.shakeTime > 0) {
+          state.shakeTime = Math.max(0, state.shakeTime - dt);
+        }
+        if (state.captureFlash > 0) {
+          state.captureFlash = Math.max(0, state.captureFlash - dt * 2.5);
+        }
+
+        // Update HUD Readouts
+        const alphaDeg = (state.alpha * 180) / Math.PI;
+        const betaDeg = (state.beta * 180) / Math.PI;
+        const combDeg = (fk.combined * 180) / Math.PI;
+        const totalReach = Math.hypot(fk.x, fk.y);
+
+        hudAlphaEl.textContent = `${(state.alpha / Math.PI).toFixed(2)}π (${alphaDeg.toFixed(1)}°)`;
+        hudL1VecEl.textContent = `ΔX₁: ${formatSignedPx(fk.x1)}px | ΔY₁: ${formatSignedPx(fk.y1)}px`;
+
+        hudBetaEl.textContent = `${state.beta >= 0 ? '+' : ''}${(state.beta / Math.PI).toFixed(2)}π (${betaDeg >= 0 ? '+' : ''}${betaDeg.toFixed(1)}°)`;
+        hudAlphaBetaEl.textContent = `Combined (α+β): ${combDeg.toFixed(1)}°`;
+
+        hudClawPosEl.textContent = `(${formatSignedPx(fk.x)}, ${formatSignedPx(fk.y)})`;
+        hudTotalReachEl.textContent = `Total Reach: ${Math.round(totalReach)}px / ${L1 + L2}px`;
+
+        hudTargetPosEl.textContent = `(${formatSignedPx(state.targetX)}, ${formatSignedPx(state.targetY)})`;
+        hudDistanceEl.textContent = isCapturing
+          ? `LOCKED IN (${distToRelic.toFixed(1)}px) — HOLD!`
+          : `Dist: ${Math.round(distToRelic)}px (Need ≤ ${CAPTURE_RADIUS}px)`;
+        hudDistanceEl.style.color = isCapturing ? 'var(--jade)' : 'var(--text-muted)';
+
+        // Render Scene with Stone-Rumble Screen Shake
+        ctx.save();
+        if (state.shakeTime > 0) {
+          const intensity = (state.shakeTime / 0.45) * state.shakeMagnitude;
+          const ox = (Math.random() * 2 - 1) * intensity;
+          const oy = (Math.random() * 2 - 1) * intensity;
+          ctx.translate(ox, oy);
+        }
+
+        drawVaultBackground(timeSec);
+
+        if (state.showGeometry) {
+          drawReachGeometryChalk(fk);
+        }
+
+        // Draw Base Segment (Shoulder L1 = 160px)
+        drawStoneBeam(
+          ANCHOR_X,
+          ANCHOR_Y,
+          fk.elbowCanvasX,
+          fk.elbowCanvasY,
+          20,
+          '#2e261e',
+          '#f59e0b'
+        );
+
+        // Draw Forearm Segment (Elbow L2 = 140px)
+        drawStoneBeam(
+          fk.elbowCanvasX,
+          fk.elbowCanvasY,
+          fk.clawCanvasX,
+          fk.clawCanvasY,
+          15,
+          '#25201a',
+          '#38bdf8'
+        );
+
+        // Draw Shoulder Stone Gear Joint
+        ctx.fillStyle = '#1f1914';
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(ANCHOR_X, ANCHOR_Y, 14, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Draw Elbow Stone Gear Joint
+        ctx.fillStyle = '#1f1914';
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(fk.elbowCanvasX, fk.elbowCanvasY, 11, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Draw Claw & Relic
+        drawClawHand(fk, isCapturing);
+        drawRelicOrb(timeSec, distToRelic);
+
+        // Capture flash overlay
+        if (state.captureFlash > 0) {
+          ctx.fillStyle = `rgba(52, 211, 153, ${state.captureFlash * 0.22})`;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        ctx.restore();
+        requestAnimationFrame(tick);
+      }
+
+      // Initialize
+      syncControlsToState();
+      spawnRelicForTrial(0);
+      requestAnimationFrame(tick);
+    })();
+  </script>
+</body>
+</html>
